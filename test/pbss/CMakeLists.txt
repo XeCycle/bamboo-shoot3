@@ -27,6 +27,7 @@ pbs_deftest(test-serialize-iterable)
 pbs_deftest(test-parse-container)
 pbs_deftest(test-serialize-parse-struct)
 pbs_deftest(test-tuple)
+pbs_deftest(test-tuple-layout)
 
 pbs_deftest(test-size-helpers)
 

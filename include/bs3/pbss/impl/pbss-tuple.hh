@@ -26,6 +26,8 @@
 
 // This is not std::tuple but custom structs with a fixed layout
 
+#include <cstddef>
+
 #include <bs3/utils/misc.hh>
 
 namespace pbss {
@@ -144,6 +146,65 @@ auto aot_size(const T& obj, adl_ns_tag) -> decltype(
 {
   return tuple_impl::compute_aot_size(obj, typename T::PBSS_TUPLE_MEMBER_TYPEDEF_NAME());
 }
+
+namespace tuple_impl {
+
+template <class Struct, class Member>
+constexpr size_t memptr_offset(Member Struct::* member)
+{
+  return reinterpret_cast<const char*>(&reinterpret_cast<const char&>(((Struct*)0)->*member))
+    - reinterpret_cast<const char*>((Struct*)0);
+}
+
+template <size_t expected_offset, class Tag>
+struct check_offsets;
+
+template <size_t expected_offset>
+struct check_offsets<expected_offset, tuple_members_tag<> >
+  : std::true_type
+{};
+
+template <size_t expected_offset,
+          class Struct, class Member, Member Struct::* member,
+          class... Tag>
+struct check_offsets<
+  expected_offset,
+  tuple_members_tag<tuple_member_tag<Struct, Member, member>, Tag...> >
+  : std::integral_constant<
+    bool,
+    (expected_offset == memptr_offset(member)
+     && check_offsets<(expected_offset + sizeof(Member)), tuple_members_tag<Tag...> >::value)>
+{};
+
+template <bool... x> struct all;
+template <> struct all<> : std::false_type {};
+template <> struct all<true> : std::true_type {};
+template <> struct all<false> : std::false_type {};
+template <bool... x> struct all<true, x...> : all<x...> {};
+template <bool... x> struct all<false, x...> : std::false_type {};
+
+template <class Struct, class Tag>
+struct check_is_memory_layout : std::false_type {};
+
+template <class Struct, class... Member, Member Struct::*... member>
+struct check_is_memory_layout<
+  Struct,
+  tuple_members_tag<tuple_member_tag<Struct, Member, member>...> >
+  : std::conditional<
+  all<
+    is_memory_layout<Member>::value...,
+    (sizeof(Struct)==pbsu::sumall((size_t)0, sizeof(Member)...))
+  >::value,
+  check_offsets<0, tuple_members_tag<tuple_member_tag<Struct, Member, member>...> >,
+  std::false_type>::type
+{};
+
+} // namespace tuple_impl
+
+template <class T>
+struct is_memory_layout<T, decltype(typename T::PBSS_TUPLE_MEMBER_TYPEDEF_NAME(), void())>
+  : tuple_impl::check_is_memory_layout<T, typename T::PBSS_TUPLE_MEMBER_TYPEDEF_NAME>
+{};
 
 }
 
