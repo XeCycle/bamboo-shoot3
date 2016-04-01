@@ -123,6 +123,8 @@ struct is_memory_layout : std::false_type {};
 #include "char-range-reader.hh"
 #include "char-range-writer.hh"
 
+#include "unchecked-char-range-reader.hh"
+
 namespace pbss {
 
 template <class T>
@@ -162,6 +164,15 @@ auto parse_from_buffer(const buffer& buf)
 {
   auto beg = reinterpret_cast<const char*>(&*buf.begin());
   char_range_reader reader(beg, beg + buf.size());
+  return parse<T>(reader);
+}
+
+template <class T>
+auto parse_from_buffer_trusted(const buffer& buf)
+  -> decltype(parse<T>(std::declval<std::istream&>()))
+{
+  auto beg = reinterpret_cast<const char*>(&*buf.begin());
+  unchecked_char_range_reader reader(beg);
   return parse<T>(reader);
 }
 
