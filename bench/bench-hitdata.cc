@@ -138,6 +138,17 @@ int main()
 
     {
       auto time = time_us(NSAMPLES, [&]() {
+        return pbss::parse_from_buffer_trusted<HitData>(out);
+      });
+      cout << "trusted parsed in "
+           << time << " us, "
+           << "real " << ((double)size / MB) / (time / 1e6) << " MiB/s, "
+           << "effective " << ((double)valid_size(nhits) / MB) / (time / 1e6) << "MiB/s\n"
+        ;
+    }
+
+    {
+      auto time = time_us(NSAMPLES, [&]() {
         return pbss::parse_from_buffer<HitData_tailadd>(out);
       });
       cout << "tailadd parsed in "
@@ -188,6 +199,17 @@ int main()
           return pbss::parse_from_buffer<HitData_tuple>(out);
         });
         cout << "parsed(tuple) in "
+             << time << " us, "
+             << "real " << ((double)size / MB) / (time / 1e6) << " MiB/s, "
+             << "effective " << ((double)valid_size(nhits) / MB) / (time / 1e6) << "MiB/s\n"
+          ;
+      }
+
+      {
+        auto time = time_us(NSAMPLES, [&]() {
+          return pbss::parse_from_buffer_trusted<HitData_tuple>(out);
+        });
+        cout << "trusted parsed(tuple) in "
              << time << " us, "
              << "real " << ((double)size / MB) / (time / 1e6) << " MiB/s, "
              << "effective " << ((double)valid_size(nhits) / MB) / (time / 1e6) << "MiB/s\n"
